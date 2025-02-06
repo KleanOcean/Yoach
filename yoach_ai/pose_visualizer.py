@@ -21,7 +21,7 @@ class PoseVisualizer:
         self.pose = self.mp_pose.Pose(
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5,
-            model_complexity=1,
+            model_complexity=2,
             static_image_mode=False
         )
 
@@ -30,9 +30,16 @@ class PoseVisualizer:
         self.hand_above_shoulder = False  # Add status variable
         self.previous_hand_status = False  # Add this to track status change
         self.left_hand_raised = False  # Add left hand tracking
-        self.status_colors = {
-            True: (0, 255, 0),   # Green when hand is above shoulder
-            False: (0, 165, 255)  # Orange when hand is below shoulder
+        self.upward_frames_count = 0  # Add counter for upward pointing frames
+        self.colors = {
+            'left_arm': '#FF0000',
+            'right_arm': '#00FF00',
+            'left_leg': '#FFA500',
+            'right_leg': '#00FFA5',
+            'torso': '#0000FF',
+            'right_index': '#FFFF99',  # Light yellow for right index
+            'status_active': (0, 255, 0),    # Green when active
+            'status_inactive': (0, 165, 255)  # Orange when inactive
         }
 
     def process_frame(self, frame):
@@ -59,17 +66,30 @@ class PoseVisualizer:
         landmarks = np.array([[lm.x, lm.y, lm.z] for lm in results.pose_world_landmarks.landmark])
         
         # Update hand positions status
-        right_hand = landmarks[16]  # Right wrist
-        right_shoulder = landmarks[12]  # Right shoulder
-        left_hand = landmarks[15]  # Left wrist
-        left_shoulder = landmarks[11]  # Left shoulder
+        right_hand = landmarks[20]  # Right index
+        right_shoulder = landmarks[12]
+        right_hip = landmarks[24]
         
-        self.hand_above_shoulder = right_hand[1] < right_shoulder[1]
-        self.left_hand_raised = left_hand[1] < left_shoulder[1]  # Check left hand position
+        # Check if hand is lower than hip
+        hand_below_hip = right_hand[1] > right_hip[1]
         
-        # Clear trajectory if status changes from False to True
-        if self.hand_above_shoulder and not self.previous_hand_status:
-            self.right_hand_trajectory = []
+        # Check if hand is pointing upward (Y coordinate decreasing)
+        if len(self.right_hand_trajectory) >= 2:
+            last_point = self.right_hand_trajectory[-1]
+            current_point = right_hand.copy()
+            current_point[1] = -current_point[1]  # Flip Y
+            current_point *= 100  # Scale
+            
+            # Check if movement is upward
+            if current_point[1] < last_point[1]:
+                self.upward_frames_count += 1
+            else:
+                self.upward_frames_count = 0
+            
+            # Clear trajectory if hand is below hip and has been pointing upward
+            if hand_below_hip and self.upward_frames_count >= 3:
+                self.right_hand_trajectory = []
+                self.upward_frames_count = 0
         
         # Center the pose horizontally (X and Z) using hip points
         center = np.mean(landmarks[[23, 24]], axis=0)  # Center using hip points
@@ -88,7 +108,7 @@ class PoseVisualizer:
         self.right_hand_trajectory = self.right_hand_trajectory[-self.max_trajectory_points:]
         
         # Update previous status
-        self.previous_hand_status = self.hand_above_shoulder
+        self.previous_hand_status = not hand_below_hip
         
         # Transform for visualization
         landmarks[:, 1] = -landmarks[:, 1]  # Flip Y
@@ -162,17 +182,13 @@ class PoseVisualizer:
 
     def _draw_colored_connections(self, landmarks):
         """Draw colored connections between landmarks"""
-        colors = {
-            'left_arm': '#FF0000',
-            'right_arm': '#00FF00',
-            'left_leg': '#FFA500',
-            'right_leg': '#00FFA5',
-            'torso': '#0000FF'
-        }
-        
         for connection in self.mp_pose.POSE_CONNECTIONS:
             start_idx, end_idx = connection
-            color = self._get_connection_color(start_idx, end_idx, colors)
+            color = self._get_connection_color(start_idx, end_idx, self.colors)
+            
+            # Special color for right index finger
+            if start_idx == 20 or end_idx == 20:  # Right index landmark
+                color = self.colors['right_index']
             
             x = [landmarks[start_idx, 0], landmarks[end_idx, 0]]
             y = [landmarks[start_idx, 2], landmarks[end_idx, 2]]
@@ -197,7 +213,7 @@ class PoseVisualizer:
         if len(self.right_hand_trajectory) > 1:
             trajectory = np.array(self.right_hand_trajectory)
             
-            # Trajectory points are already transformed, so no need for additional transformations
+            # Trajectory points are already transformed
             x = trajectory[:, 0]
             y = trajectory[:, 2]  # Use Z as Y for visualization
             z = trajectory[:, 1]  # Use Y as Z for visualization
@@ -205,22 +221,11 @@ class PoseVisualizer:
             # Create color gradient from blue to red
             colors = plt.cm.jet(np.linspace(0, 1, len(x)))
             
-            # Plot trajectory with thicker lines and larger points
+            # Plot trajectory with lines only
             for i in range(1, len(x)):
-                # Draw line segment
+                # Draw line segment only
                 self.ax.plot(x[i-1:i+1], y[i-1:i+1], z[i-1:i+1], 
                             color=colors[i], linewidth=3)
-                # Draw point at each position
-                self.ax.scatter(x[i-1:i+1], y[i-1:i+1], z[i-1:i+1],
-                              color=colors[i], s=50)
-            
-            # Plot current position with larger marker
-            self.ax.scatter(x[-1], y[-1], z[-1], 
-                           color='red', s=200, marker='o')
-
-            # Add small shadow/projection on the ground
-            self.ax.scatter(x, y, np.zeros_like(z), 
-                           color='gray', s=20, alpha=0.3)
 
     def clear_trajectory(self):
         """Clear the stored trajectory"""
@@ -235,7 +240,10 @@ class PoseVisualizer:
         """Draw status indicator dot in top right corner"""
         radius = 15
         center = (frame.shape[1] - 30, 30)  # 30 pixels from top-right corner
-        color = self.status_colors[self.hand_above_shoulder]
+        
+        # Use status-specific colors
+        color = self.colors['status_active'] if not self.hand_above_shoulder else self.colors['status_inactive']
+        
         cv2.circle(frame, center, radius, color, -1)  # Filled circle
         
         # Add white border
@@ -245,7 +253,7 @@ class PoseVisualizer:
 
     def get_hand_status(self):
         """Return current hand position status"""
-        return self.hand_above_shoulder
+        return not self.hand_above_shoulder
 
     def is_left_hand_raised(self):
         """Return True if left hand is above left shoulder"""

@@ -7,13 +7,17 @@ Welcome to Yoach’s AI Coaching Platform repository. This project leverages **M
 
 python mp03.py
 
-## TODOs
+## DONE
 
 1. Realtime 3d pose estimation (done)
 2. Visualise right hand trajectory (done)
 3. v1 Action-based recogition (done)
-4. visualise racket
-5. visualise racket in 3D
+
+## TODOs
+
+1. Better visualise swing trajectory
+2. visualise racket
+3. visualise racket in 3D
 
 
 
@@ -24,6 +28,7 @@ python mp03.py
 
 - [Yoach's AI Coaching Platform](#yoachs-ai-coaching-platform)
   - [Quick Start](#quick-start)
+  - [DONE](#done)
   - [TODOs](#todos)
   - [Table of Contents](#table-of-contents)
   - [Overall Goals \& Thought Process](#overall-goals--thought-process)
