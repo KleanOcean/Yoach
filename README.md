@@ -9,6 +9,8 @@ python mp03.py
 
 ## DONE
 
+3D Bounding Box Estimation
+
 1. Realtime 3d pose estimation (done)
 2. Visualise right hand trajectory (done)
 3. v1 Action-based recogition (done)
