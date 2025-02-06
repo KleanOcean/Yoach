@@ -3,10 +3,17 @@
 Welcome to Yoach’s AI Coaching Platform repository. This project leverages **Mediapipe Realtime 3D Pose Estimation** alongside advanced AI modules (such as FACT, FineParser, and VideoLLM-online) to deliver an end-to-end coaching solution that transforms raw video inputs into personalized, actionable feedback. Our system supports multiple sports and fitness activities, providing detailed motion analysis and user-friendly guidance.
 
 ---
+## Quick Start 
+
+python mp03.py
+
+
+
 
 ## Table of Contents
 
 - [Yoach's AI Coaching Platform](#yoachs-ai-coaching-platform)
+  - [Quick Start](#quick-start)
   - [Table of Contents](#table-of-contents)
   - [Overall Goals \& Thought Process](#overall-goals--thought-process)
     - [Goal](#goal)

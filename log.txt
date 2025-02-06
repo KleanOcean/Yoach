@@ -1,0 +1,19 @@
+python mp03.py
+
+
+Fetch Updates from the Remote Branch
+Before comparing, fetch the latest changes from the remote repository:
+
+bash
+
+git fetch origin
+
+git status
+
+View the commits your local branch is missing:
+bash
+
+複製
+git log origin/main..HEAD
+
+git diff --name-status origin/main
