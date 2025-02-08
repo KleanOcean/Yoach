@@ -5,11 +5,41 @@ from yoach_ai.pose_visualizer import PoseVisualizer
 from yoach_ai.video_recorder import VideoRecorder
 from yoach_ai.camera_handler import CameraHandler  # Use your existing camera handler
 
+class PoseVisualizer:
+    def __init__(self, smoothing_factor=0.5):
+        self.previous_landmarks = None
+        self.smoothing_factor = smoothing_factor
+        
+    def smooth_landmarks(self, current_landmarks):
+        if self.previous_landmarks is None:
+            self.previous_landmarks = current_landmarks
+            return current_landmarks
+            
+        smoothed = []
+        for prev, curr in zip(self.previous_landmarks, current_landmarks):
+            smoothed_x = prev.x * (1 - self.smoothing_factor) + curr.x * self.smoothing_factor
+            smoothed_y = prev.y * (1 - self.smoothing_factor) + curr.y * self.smoothing_factor
+            smoothed_z = prev.z * (1 - self.smoothing_factor) + curr.z * self.smoothing_factor
+            smoothed.append(PoseLandmark(x=smoothed_x, y=smoothed_y, z=smoothed_z))
+            
+        self.previous_landmarks = smoothed
+        return smoothed
+        
+    def process_frame(self, frame):
+        results = super().process_frame(frame)
+        if results.pose_landmarks:
+            results.pose_landmarks.landmark = self.smooth_landmarks(results.pose_landmarks.landmark)
+        return results
+
 def main():
     try:
         # Initialize components
         camera = CameraHandler(camera_id=1)
-        visualizer = PoseVisualizer()
+        visualizer = PoseVisualizer(
+            min_detection_confidence=0.7,  # Default is 0.5
+            min_tracking_confidence=0.7,   # Default is 0.5
+            model_complexity=2             # Use the most accurate model (0, 1, or 2)
+        )
         recorder = VideoRecorder()
         
         # Add FPS calculation variables
@@ -34,6 +64,23 @@ def main():
                 camera.reset()
                 continue
             
+            # Add preprocessing steps
+            # 1. Resize frame to optimal size (not too small, not too large)
+            height, width = frame.shape[:2]
+            if width > 1280:  # Limit max width while maintaining aspect ratio
+                scale = 1280 / width
+                new_width = int(width * scale)
+                new_height = int(height * scale)
+                frame = cv2.resize(frame, (new_width, new_height))
+                
+            # 2. Apply subtle smoothing to reduce noise
+            frame = cv2.GaussianBlur(frame, (3, 3), 0)
+            
+            # 3. Adjust brightness and contrast if needed
+            alpha = 1.2  # Contrast control (1.0-3.0)
+            beta = 10    # Brightness control (0-100)
+            frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
+            
             # Calculate FPS
             fps_counter += 1
             if (time.time() - fps_start_time) > fps_update_interval:
@@ -41,7 +88,7 @@ def main():
                 fps_counter = 0
                 fps_start_time = time.time()
             
-            # Process frame
+            # Process frame with improved image
             results = visualizer.process_frame(frame)
             
             # Check for left hand raise to stop
@@ -76,6 +123,31 @@ def main():
             fps_text = f"FPS: {int(fps)}"
             cv2.putText(combined_frame, fps_text, (10, combined_frame.shape[0] - 10),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            
+            # Add lighting quality check
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            brightness = np.mean(gray)
+            contrast = np.std(gray)
+            
+            # Draw lighting status
+            lighting_status = "Lighting: "
+            if brightness < 50:
+                lighting_status += "Too Dark"
+                color = (0, 0, 255)  # Red
+            elif brightness > 200:
+                lighting_status += "Too Bright"
+                color = (0, 0, 255)  # Red
+            else:
+                lighting_status += "Good"
+                color = (0, 255, 0)  # Green
+                
+            cv2.putText(combined_frame, lighting_status, (10, 30),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+            
+            # Add contrast warning
+            if contrast < 20:
+                cv2.putText(combined_frame, "Low Contrast", (10, 60),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
             
             # Handle recording
             if recorder.is_recording:

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSCameraUsageDescription</key>
+    <string>This app needs camera access for pose estimation</string>
+    <key>NSCameraUseContinuityCameraDeviceType</key>
+    <true/>
+    <key>CFBundleName</key>
+    <string>YoachAI</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.example.yoachai</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+</dict>
+</plist>
