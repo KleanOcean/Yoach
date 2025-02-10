@@ -3,15 +3,10 @@ import numpy as np
 
 class DisplayManager:
     def __init__(self, window_width=2880, window_height=1620):
-        self.window_name = 'Yoach Sports Analysis'
         self.window_width = window_width
         self.window_height = window_height
         self.base_font_scale = window_height / 500.0 * 0.75
         self.base_thickness = max(1, int(self.base_font_scale * 2))
-        self._init_window()
-
-    def _init_window(self):
-        cv2.namedWindow(self.window_name, cv2.WINDOW_AUTOSIZE)
 
     def create_quadrant_layout(self, frame_2d, frame_3d, pose_results=None, recording_time=None):
         # Create a black canvas for the full window
@@ -28,7 +23,7 @@ class DisplayManager:
         
         # Q2: Coach Chat (top-right) with white background
         q2 = np.full((quad_height, quad_width, 3), 255, dtype=np.uint8)  # White background
-        self._add_centered_text(q2, "Coach Chat", 1.5, is_title=True, color=(0, 0, 0))
+        self._add_centered_text(q2, "Coach Chat", 1.0, is_title=True, color=(0, 0, 0))
         full_frame[0:quad_height, quad_width:] = q2
         
         # Q3: 3D Visualizer (bottom-left)
@@ -38,7 +33,7 @@ class DisplayManager:
         
         # Q4: Sports Analysis (bottom-right) with white background
         q4 = np.full((quad_height, quad_width, 3), 255, dtype=np.uint8)  # White background
-        self._add_centered_text(q4, "Sports Analysis", 1.5, is_title=True, color=(0, 0, 0))
+        self._add_centered_text(q4, "Sports Analysis", 1.0, is_title=True, color=(0, 0, 0))
         
         # Add pose detection text if landmarks are present
         if pose_results and pose_results.pose_landmarks:
@@ -106,11 +101,11 @@ class DisplayManager:
                                 cv2.BORDER_CONSTANT, value=[0, 0, 0])
 
     def _add_centered_text(self, frame, text, scale_factor=1.0, is_title=False, color=(255, 255, 255)):
-        """Add text to frame, either centered or as a title"""
-        font_scale = self.base_font_scale * scale_factor
+        # Increase base font size for titles and text
+        font_scale = self.base_font_scale * scale_factor * 1.5  # Base increase by 50%
         if is_title:
-            font_scale *= 0.8  # Make title smaller
-        thickness = max(1, int(self.base_thickness * scale_factor))
+            font_scale *= 0.7  # Reduce title size by 30% (changed from 0.8)
+        thickness = max(2, int(self.base_thickness * scale_factor * 1.5))
         
         # Get text size
         (text_width, text_height), baseline = cv2.getTextSize(
@@ -120,7 +115,7 @@ class DisplayManager:
         if is_title:
             # Position at top with padding
             x = (frame.shape[1] - text_width) // 2
-            y = text_height + 40  # Add padding from top
+            y = text_height + 60  # Increased padding from top
         else:
             # Center position
             x = (frame.shape[1] - text_width) // 2
@@ -130,39 +125,54 @@ class DisplayManager:
                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness)
 
     def add_overlays(self, frame, fps, lighting_info, view_info):
-        font_scale = self.base_font_scale
-        thickness = self.base_thickness
+        # Make text even larger
+        font_scale = self.base_font_scale * 3.0  # Increased from 2.0 to 3.0
+        thickness = max(3, int(self.base_thickness * 3))
         
-        # Add FPS (Q1)
+        # FPS in Q1 (top-left) - Even larger
         fps_text = f"FPS: {int(fps)}"
         cv2.putText(frame, fps_text,
-                   (30, self.window_height//2 - 25),
-                   cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 0), thickness)
+                   (80, 150),  # Moved further down and right
+                   cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.5, (0, 255, 0), thickness + 2)
         
-        # Add lighting status (Q1)
+        # Lighting status in Q1
         cv2.putText(frame, lighting_info['status'], 
-                   (30, 70),
-                   cv2.FONT_HERSHEY_SIMPLEX, font_scale, lighting_info['color'], thickness)
+                   (80, 250),  # Adjusted position
+                   cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.2, lighting_info['color'], thickness)
         
         if lighting_info['contrast_warning']:
             cv2.putText(frame, "Low Contrast", 
-                       (30, 135),
-                       cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), thickness)
+                       (80, 350),  # Adjusted position
+                       cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.2, (0, 0, 255), thickness)
         
-        # Add view controls and info (Q3)
+        # Q3: Add view controls info (bottom-left quadrant)
         if view_info:
-            lines = view_info.split('\n')
-            for i, line in enumerate(lines):
-                text_size = cv2.getTextSize(line, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
-                text_x = self.window_width//2 - text_size[0] - 20
-                text_y = self.window_height - 20 - (len(lines) - 1 - i) * int(25 * font_scale)
-                cv2.putText(frame, line,
-                           (text_x, text_y),
-                           cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 0), thickness)
+            # Add control instructions - Higher up and larger
+            control_text = "Controls: I/K: Tilt | J/L: Rotate | U/N: Height"
+            text_x = 80
+            text_y = self.window_height - 300  # Moved even higher
+            cv2.putText(frame, control_text,
+                       (text_x, text_y),
+                       cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.5, (0, 255, 0), thickness + 1)
+            
+            try:
+                parts = view_info.split('|')
+                tilt = int(''.join(filter(str.isdigit, parts[1])))
+                rotate = int(''.join(filter(str.isdigit, parts[2])))
+                height = float(parts[3].split(':')[1].strip())
+                
+                # Add current view info with larger spacing
+                view_info_text = f"Tilt: {tilt} | Rotate: {rotate} | Height: {height:.1f}"
+                cv2.putText(frame, view_info_text,
+                           (text_x, text_y + 150),  # Increased spacing
+                           cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.5, (0, 255, 0), thickness + 1)
+            except (IndexError, ValueError) as e:
+                cv2.putText(frame, view_info,
+                           (text_x, text_y + 150),
+                           cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.5, (0, 255, 0), thickness + 1)
 
     def show_frame(self, frame):
-        cv2.imshow(self.window_name, frame)
+        pass  # Remove this method as we don't need it anymore
 
     def cleanup(self):
-        cv2.destroyAllWindows()
-        cv2.waitKey(1)
+        pass  # Just pass as we don't need to clean up windows anymore
