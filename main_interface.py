@@ -7,9 +7,9 @@ import cv2
 import numpy as np
 
 # Import your existing components
-from pose_visualizer import PoseVisualizer
-from video_recorder import VideoRecorder
-from display_manager import DisplayManager
+from utils.pose_visualizer import PoseVisualizer
+from utils.video_recorder import VideoRecorder
+from utils.display_manager import DisplayManager
 
 class MainWindow(QMainWindow):
     def __init__(self):
