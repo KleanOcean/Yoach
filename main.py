@@ -15,7 +15,7 @@ def setup_camera(camera_id=0):
         # Try to use AVFOUNDATION backend specifically
         cap = cv2.VideoCapture(camera_id, cv2.CAP_AVFOUNDATION)
         # Use IPhone camera
-        cap = cv2.VideoCapture(camera_id)
+        # cap = cv2.VideoCapture(camera_id)
         if not cap.isOpened():
             raise Exception("Could not open camera")
             
