@@ -1,11 +1,16 @@
 import cv2
 import numpy as np
+import platform
 
 class DisplayManager:
     def __init__(self, window_width=2880, window_height=1620):
         self.window_width = window_width
         self.window_height = window_height
-        self.base_font_scale = window_height / 500.0 * 0.75
+        # Adjust base font scale based on platform
+        if platform.system() == "Darwin":  # macOS
+            self.base_font_scale = (window_height / 500.0 * 0.75) * 0.5  # Half size for Mac
+        else:
+            self.base_font_scale = window_height / 500.0 * 0.75
         self.base_thickness = max(1, int(self.base_font_scale * 2))
 
     def create_quadrant_layout(self, frame_2d, frame_3d, pose_results=None, recording_time=None):
@@ -101,11 +106,22 @@ class DisplayManager:
                                 cv2.BORDER_CONSTANT, value=[0, 0, 0])
 
     def _add_centered_text(self, frame, text, scale_factor=1.0, is_title=False, color=(255, 255, 255)):
-        # Increase base font size for titles and text
-        font_scale = self.base_font_scale * scale_factor * 1.5  # Base increase by 50%
-        if is_title:
-            font_scale *= 0.7  # Reduce title size by 30% (changed from 0.8)
-        thickness = max(2, int(self.base_thickness * scale_factor * 1.5))
+        # Adjust font sizes for Mac
+        if platform.system() == "Darwin":  # macOS
+            if is_title and (text == "Coach Chat" or text == "Sports Analysis"):
+                # Make Coach Chat and Sports Analysis titles bigger on Mac
+                font_scale = self.base_font_scale * scale_factor * 2.0  # Increased from 0.75
+                thickness = max(2, int(self.base_thickness * scale_factor * 1.5))
+            else:
+                font_scale = self.base_font_scale * scale_factor * 1.0
+                if is_title:
+                    font_scale *= 0.7
+                thickness = max(1, int(self.base_thickness * scale_factor * 0.75))
+        else:
+            font_scale = self.base_font_scale * scale_factor * 1.5
+            if is_title:
+                font_scale *= 0.7
+            thickness = max(2, int(self.base_thickness * scale_factor * 1.5))
         
         # Get text size
         (text_width, text_height), baseline = cv2.getTextSize(
@@ -113,11 +129,13 @@ class DisplayManager:
         
         # Calculate position
         if is_title:
-            # Position at top with padding
             x = (frame.shape[1] - text_width) // 2
-            y = text_height + 60  # Increased padding from top
+            # Move Mac titles down a bit more for better visibility
+            if platform.system() == "Darwin" and (text == "Coach Chat" or text == "Sports Analysis"):
+                y = text_height + 80  # Increased from 60
+            else:
+                y = text_height + 60
         else:
-            # Center position
             x = (frame.shape[1] - text_width) // 2
             y = (frame.shape[0] + text_height) // 2
         
@@ -125,35 +143,64 @@ class DisplayManager:
                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness)
 
     def add_overlays(self, frame, fps, lighting_info, view_info):
-        # Make text even larger
-        font_scale = self.base_font_scale * 3.0  # Increased from 2.0 to 3.0
-        thickness = max(3, int(self.base_thickness * 3))
+        # Adjust text size based on platform
+        if platform.system() == "Darwin":  # macOS
+            # You can adjust these values to change text size
+            fps_size = 2.5 # Size for FPS text
+            control_size = 1.2  # Size for control instructions
+            status_size = 2.0  # Size for lighting status
+            
+            # Base thickness for the text
+            thickness = max(1, int(self.base_thickness * 1.0))
+        else:
+            # Windows sizes
+            fps_size = 3.0
+            control_size = 3.0
+            status_size = 2.0
+            thickness = max(3, int(self.base_thickness * 3))
         
-        # FPS in Q1 (top-left) - Even larger
+        # FPS text position - (x, y) coordinates
+        fps_x = 50  # Adjust this value to move left/right
+        fps_y = 80  # Adjust this value to move up/down
         fps_text = f"FPS: {int(fps)}"
         cv2.putText(frame, fps_text,
-                   (80, 150),  # Moved further down and right
-                   cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.5, (0, 255, 0), thickness + 2)
+                   (fps_x, fps_y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 
+                   self.base_font_scale * fps_size,
+                   (0, 255, 0),
+                   thickness + 1)
         
-        # Lighting status in Q1
+        # Lighting status position
+        lighting_x = 50  # Adjust this value
+        lighting_y = 140  # Adjust this value
         cv2.putText(frame, lighting_info['status'], 
-                   (80, 250),  # Adjusted position
-                   cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.2, lighting_info['color'], thickness)
+                   (lighting_x, lighting_y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 
+                   self.base_font_scale * status_size,
+                   lighting_info['color'], 
+                   thickness)
         
         if lighting_info['contrast_warning']:
+            contrast_x = 80  # Adjust this value
+            contrast_y = 350  # Adjust this value
             cv2.putText(frame, "Low Contrast", 
-                       (80, 350),  # Adjusted position
-                       cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.2, (0, 0, 255), thickness)
+                       (contrast_x, contrast_y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 
+                       self.base_font_scale * status_size,
+                       (0, 0, 255), 
+                       thickness)
         
-        # Q3: Add view controls info (bottom-left quadrant)
+        # Control instructions position
         if view_info:
-            # Add control instructions - Higher up and larger
+            control_x = 80  # Adjust this value
+            control_y = self.window_height - 100  # Adjust this value
             control_text = "Controls: I/K: Tilt | J/L: Rotate | U/N: Height"
-            text_x = 80
-            text_y = self.window_height - 300  # Moved even higher
             cv2.putText(frame, control_text,
-                       (text_x, text_y),
-                       cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.5, (0, 255, 0), thickness + 1)
+                       (control_x, control_y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 
+                       self.base_font_scale * control_size,
+                       (0, 255, 0), 
+                       thickness + 1)
             
             try:
                 parts = view_info.split('|')
@@ -161,18 +208,40 @@ class DisplayManager:
                 rotate = int(''.join(filter(str.isdigit, parts[2])))
                 height = float(parts[3].split(':')[1].strip())
                 
-                # Add current view info with larger spacing
+                # View info text position
+                view_x = control_x  # Adjust this value
+                view_y = control_y + 10  # Adjust this value
                 view_info_text = f"Tilt: {tilt} | Rotate: {rotate} | Height: {height:.1f}"
                 cv2.putText(frame, view_info_text,
-                           (text_x, text_y + 150),  # Increased spacing
-                           cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.5, (0, 255, 0), thickness + 1)
+                           (view_x, view_y),
+                           cv2.FONT_HERSHEY_SIMPLEX, 
+                           self.base_font_scale * control_size,
+                           (0, 255, 0), 
+                           thickness + 1)
             except (IndexError, ValueError) as e:
                 cv2.putText(frame, view_info,
-                           (text_x, text_y + 150),
-                           cv2.FONT_HERSHEY_SIMPLEX, font_scale * 1.5, (0, 255, 0), thickness + 1)
+                           (control_x, control_y + 150),
+                           cv2.FONT_HERSHEY_SIMPLEX, 
+                           self.base_font_scale * control_size,  # Adjust this multiplier
+                           (0, 255, 0), 
+                           thickness + 1)
 
     def show_frame(self, frame):
-        pass  # Remove this method as we don't need it anymore
+        """Display frame with platform-specific handling"""
+        if frame is None:
+            return
+        
+        # Ensure frame is properly sized for display
+        height, width = frame.shape[:2]
+        max_dimension = 1280
+        
+        if width > max_dimension:
+            scale = max_dimension / width
+            frame = cv2.resize(frame, (int(width * scale), int(height * scale)))
+        
+        # Create named window with proper flags for Mac
+        cv2.namedWindow('Pose Detection', cv2.WINDOW_NORMAL)
+        cv2.imshow('Pose Detection', frame)
 
     def cleanup(self):
         pass  # Just pass as we don't need to clean up windows anymore

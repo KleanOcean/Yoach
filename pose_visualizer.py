@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mediapipe as mp
 from mpl_toolkits.mplot3d import Axes3D
+import platform
 
 class PoseVisualizer:
     def __init__(self, smoothing_factor=0.5):
@@ -25,10 +26,15 @@ class PoseVisualizer:
         self.pose_connections = self.mp_pose.POSE_CONNECTIONS
 
     def _init_3d_visualization(self):
+        # Use Agg backend for Mac compatibility
+        import matplotlib
+        matplotlib.use('Agg')
+        
         plt.rcParams['figure.figsize'] = [8, 8]
         self.fig = plt.figure(figsize=(8, 8))
         self.ax = self.fig.add_subplot(111, projection='3d')
-        plt.ion()
+        # Remove plt.ion() as we're using Agg backend
+        self.fig.tight_layout()
 
     def _init_smoothing(self, smoothing_factor):
         self.previous_landmarks = None
@@ -205,9 +211,17 @@ class PoseVisualizer:
 
     def _convert_plot_to_image(self):
         self.fig.canvas.draw()
-        img = np.frombuffer(self.fig.canvas.tostring_rgb(), dtype=np.uint8)
-        img = img.reshape(self.fig.canvas.get_width_height()[::-1] + (3,))
-        return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        
+        # Get the correct dimensions from the figure
+        width, height = self.fig.canvas.get_width_height()
+        buffer = self.fig.canvas.buffer_rgba()
+        
+        # Convert to numpy array with correct shape
+        img = np.asarray(buffer)
+        # Convert RGBA to RGB
+        img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
+        
+        return img
 
     def smooth_landmarks(self, current_landmarks):
         """Apply temporal smoothing to landmarks"""

@@ -3,8 +3,14 @@
 <plist version="1.0">
 <dict>
     <key>NSCameraUsageDescription</key>
-    <string>This app requires camera access for pose detection</string>
+    <string>This app needs camera access for pose estimation</string>
     <key>NSCameraUseContinuityCameraDeviceType</key>
     <true/>
+    <key>CFBundleName</key>
+    <string>YoachAI</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.example.yoachai</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
 </dict>
 </plist>

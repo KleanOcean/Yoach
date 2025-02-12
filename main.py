@@ -4,26 +4,53 @@ from display_manager import DisplayManager
 import cv2
 import time
 import numpy as np
+import platform
+import sys
 
 def setup_camera(camera_id=0):
-    """Initialize camera, try backup if primary fails"""
-    cap = cv2.VideoCapture(camera_id)
-    if not cap.isOpened():
-        camera_id = 1
+    """Initialize camera with platform-specific settings"""
+    system = platform.system()
+    
+    if system == "Darwin":  # macOS
+        # Try to use AVFOUNDATION backend specifically
+        cap = cv2.VideoCapture(camera_id, cv2.CAP_AVFOUNDATION)
+        # Use IPhone camera
         cap = cv2.VideoCapture(camera_id)
+        if not cap.isOpened():
+            raise Exception("Could not open camera")
+            
+        # Set Mac-specific camera properties
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        cap.set(cv2.CAP_PROP_FPS, 30)
+        
+    elif system == "Windows":
+        cap = cv2.VideoCapture(camera_id)
+        if not cap.isOpened():
+            camera_id = 1
+            cap = cv2.VideoCapture(camera_id)
+            
     if not cap.isOpened():
         raise Exception("Could not open camera")
+        
     return cap
 
 def print_instructions():
-    """Print usage instructions"""
+    """Print usage instructions with platform-specific details"""
+    system = platform.system()
     print("Camera initialized. Press:")
     print("'q' - quit")
     print("'r' - reset camera")
     print("'v' - start/stop recording")
-    print("'I/K' - tilt up/down")
-    print("'J/L' - rotate left/right")
-    print("'U/N' - adjust height up/down")
+    
+    if system == "Darwin":  # macOS
+        print("'I/K' or Up/Down arrows - tilt up/down")
+        print("'J/L' or Left/Right arrows - rotate left/right")
+        print("'U/N' - adjust height up/down")
+    else:  # Windows
+        print("'I/K' - tilt up/down")
+        print("'J/L' - rotate left/right")
+        print("'U/N' - adjust height up/down")
 
 def process_frame(cap, visualizer):
     """Process a single frame"""
@@ -107,8 +134,10 @@ def cleanup(camera, visualizer, recorder, display):
 
 def main():
     try:
-        # Initialize components
+        # Initialize camera using the platform-specific setup
         camera = setup_camera()
+        
+        # Initialize components
         visualizer = PoseVisualizer()
         recorder = VideoRecorder()
         display = DisplayManager()
