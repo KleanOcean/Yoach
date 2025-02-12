@@ -94,35 +94,40 @@ class PoseVisualizer:
 
     def draw_2d_pose(self, frame, results):
         if results.pose_landmarks:
-            # Draw landmarks with confidence-based colors
-            for idx, landmark in enumerate(results.pose_landmarks.landmark):
-                confidence = landmark.visibility if hasattr(landmark, 'visibility') else 1.0
-                color = (0, int(255 * confidence), 0)
-                
-                pos = (int(landmark.x * frame.shape[1]), int(landmark.y * frame.shape[0]))
-                cv2.circle(frame, pos, 5, color, -1)
-                
-            # Draw connections with confidence-based thickness
+            # Draw landmarks with thicker lines for visibility
             for connection in self.pose_connections:
                 start_idx = connection[0]
                 end_idx = connection[1]
-                
                 start = results.pose_landmarks.landmark[start_idx]
                 end = results.pose_landmarks.landmark[end_idx]
                 
-                confidence = min(start.visibility, end.visibility) if hasattr(start, 'visibility') else 1.0
-                thickness = int(3 * confidence)
+                # Convert normalized coordinates to image dimensions
+                h, w = frame.shape[:2]
+                start_pos = (int(start.x * w), int(start.y * h))
+                end_pos = (int(end.x * w), int(end.y * h))
                 
-                if thickness > 0:
-                    start_pos = (int(start.x * frame.shape[1]), int(start.y * frame.shape[0]))
-                    end_pos = (int(end.x * frame.shape[1]), int(end.y * frame.shape[0]))
-                    cv2.line(frame, start_pos, end_pos, (0, 255, 0), thickness)
+                # Draw thicker lines
+                cv2.line(frame, start_pos, end_pos, (0, 255, 0), 3)
+                
+            # Draw landmarks as circles
+            for landmark in results.pose_landmarks.landmark:
+                pos = (int(landmark.x * w), int(landmark.y * h))
+                cv2.circle(frame, pos, 5, (0, 0, 255), -1)
+        
         return frame
 
     def visualize_3d_pose(self, results):
         self._setup_3d_plot()
         if results.pose_world_landmarks:
-            self._draw_pose(results.pose_world_landmarks)
+            print("Found world landmarks, drawing 3D pose...")  # Debug log
+            view_params = {
+                'elevation': self.elev,
+                'azimuth': self.azim,
+                'z_offset': self.z_offset
+            }
+            self._draw_pose(results.pose_world_landmarks, view_params)
+        else:
+            print("No world landmarks found")  # Debug log
         self._update_view()
         return self._convert_plot_to_image()
 
@@ -158,7 +163,10 @@ class PoseVisualizer:
         self.ax.set_zlabel('Z', fontsize=8, labelpad=8)
         self.ax.tick_params(axis='both', which='major', labelsize=7, length=4, width=1)
 
-    def _draw_pose(self, landmarks):
+    def _draw_pose(self, landmarks, view_params):
+        """Draw 3D pose with landmarks"""
+        print("Drawing 3D pose...")  # Debug log
+        
         # Extract coordinates
         x = [-landmark.z for landmark in landmarks.landmark]
         y = [landmark.x for landmark in landmarks.landmark]
@@ -176,7 +184,7 @@ class PoseVisualizer:
         )
         
         # Define target shoulder width (normalized scale)
-        target_width = 0.5  # Reduced to fit better in the grid
+        target_width = 0.5
         scale_factor = target_width / shoulder_width if shoulder_width > 0 else 1.0
         
         # Calculate centroid for centering
@@ -184,15 +192,20 @@ class PoseVisualizer:
         centroid_y = np.mean(y)
         centroid_z = np.mean(z)
         
-        # Center the pose at (0,0,0) and scale
+        # Center and scale the pose
         x = [(coord - centroid_x) * scale_factor for coord in x]
         y = [(coord - centroid_y) * scale_factor for coord in y]
         z = [(coord - centroid_z) * scale_factor for coord in z]
         
-        # Apply height offset relative to center (now starting from 0.0)
-        z = [z_coord + self.z_offset for z_coord in z]
+        # Update view
+        self.ax.view_init(elev=view_params['elevation'], azim=view_params['azimuth'])
         
-        # Draw main connections with normalized coordinates
+        # Clear previous frame
+        self.ax.clear()
+        self._setup_grid()
+        self._setup_axes()
+        
+        # Draw connections
         for connection in self.pose_connections:
             start_idx = connection[0]
             end_idx = connection[1]
@@ -201,7 +214,15 @@ class PoseVisualizer:
                         [z[start_idx], z[end_idx]], 'b-', linewidth=2)
         
         # Plot landmarks
-        self.ax.scatter(x, y, z, c='y', s=50)
+        self.ax.scatter(x, y, z, c='r', s=50)
+        
+        # Set view limits
+        max_range = 1.0
+        self.ax.set_xlim([-max_range, max_range])
+        self.ax.set_ylim([-max_range, max_range])
+        self.ax.set_zlim([-max_range, max_range])
+        
+        print("3D pose drawing completed")  # Debug log
 
     def _update_view(self):
         self.ax.view_init(elev=self.elev, azim=self.azim)

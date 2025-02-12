@@ -1,6 +1,0 @@
-python main2.py
-python -m http.server 8000
-
-now its good to have llm with visual understanding and audio but its in English. I need to make it return in text, and use synthesis TTS to return in Chinese
-
-while talking to the llm, i also want to display the text on the screen.

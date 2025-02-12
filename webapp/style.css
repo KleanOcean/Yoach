@@ -1,0 +1,217 @@
+/* Copyright 2023 The MediaPipe Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. */
+
+@use "@material";
+body {
+  font-family: roboto;
+  margin: 0;
+  color: #3d3d3d;
+  --mdc-theme-primary: #007f8b;
+  --mdc-theme-on-primary: #f1f3f4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  height: 100vh;
+}
+
+h1 {
+  color: #007f8b;
+  margin-bottom: 30px;
+}
+
+h2 {
+  clear: both;
+}
+
+em {
+  font-weight: bold;
+}
+
+video {
+  clear: both;
+  display: block;
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
+}
+
+section {
+  opacity: 1;
+  transition: opacity 500ms ease-in-out;
+}
+
+header,
+footer {
+  clear: both;
+}
+
+.removed {
+  display: none;
+}
+
+.invisible {
+  opacity: 0.2;
+}
+
+.note {
+  font-style: italic;
+  font-size: 130%;
+}
+
+.videoView {
+  position: relative;
+  margin: 0 auto;
+}
+
+.overlay {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  transform: scaleX(-1); /* Mirror the display */
+}
+
+.input_video {
+  display: none; /* Hide raw video feed */
+}
+
+.output_canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: scaleX(-1); /* Mirror the display */
+  object-fit: contain !important;
+  width: 240px !important;
+  height: 135px !important;
+}
+
+.mdc-button {
+  margin: 20px auto;
+  display: block;
+}
+
+.mdc-button.active {
+  background-color: #f44336 !important;
+}
+
+.status-indicator {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.7);
+  padding: 10px;
+  border-radius: 5px;
+  color: white;
+}
+
+.status-red { color: #ff4444; }
+.status-green { color: #00ff00; }
+
+/* Remove image detection styles */
+.detectOnClick, .detectOnClick img, .detectOnClick p {
+  display: none !important;
+}
+
+.grid-container {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.grid-item {
+  width: 480px !important;
+  height: 270px !important;
+  margin: 10px 0;
+}
+
+#q1, #q3 {
+  width: 100% !important;
+  height: 720px !important;
+}
+
+#q1 .video-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+#q1 video, 
+#q1 canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#3dCanvas {
+  width: 168px !important;
+  height: 95px !important;
+}
+
+.placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  font-size: 24px;
+  color: #666;
+}
+
+.video-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#q3 canvas {
+  width: 100%;
+  height: 100%;
+  background: #2a2a2a !important;
+  touch-action: none;
+  min-height: 0;
+  aspect-ratio: 16/9; /* Maintain same aspect as video */
+  object-fit: contain;
+}
+
+/* Update grid item positions */
+#q1 {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+#q3 {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+/* Adjust grid item sizing */
+.grid-item#q3 {
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Both viewers same size */
+.output_canvas, #3dCanvas {
+  width: 480px !important;
+  height: 270px !important;
+}
+
+/* Add this rule to prevent scaling */
+canvas {
+  width: 100% !important;
+  height: auto !important;
+  max-width: 480px;
+  image-rendering: crisp-edges;
+}
