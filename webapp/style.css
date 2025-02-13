@@ -15,15 +15,17 @@ limitations under the License. */
 @use "@material";
 body {
   font-family: roboto;
-  margin: 0;
+  margin: 0 !important;
   color: #3d3d3d;
   --mdc-theme-primary: #007f8b;
   --mdc-theme-on-primary: #f1f3f4;
-  display: flex;
+  display: block !important;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
+  padding: 0 !important;
   height: 100vh;
+  overflow-x: hidden !important;
+  width: 100vw !important;
 }
 
 h1 {
@@ -83,17 +85,14 @@ footer {
 }
 
 .input_video {
-  display: none; /* Hide raw video feed */
+  display: block !important;
+  position: absolute;
+  transform: scaleX(-1);
 }
 
 .output_canvas {
   position: absolute;
-  left: 0;
-  top: 0;
-  transform: scaleX(-1); /* Mirror the display */
-  object-fit: contain !important;
-  width: 240px !important;
-  height: 135px !important;
+  z-index: 1;
 }
 
 .mdc-button {
@@ -124,26 +123,34 @@ footer {
 }
 
 .grid-container {
-  max-width: 480px;
-  margin: 0 auto;
+  grid-template-columns: 640px 640px !important;
+  grid-template-rows: 480px !important;
 }
 
 .grid-item {
-  width: 480px !important;
-  height: 270px !important;
-  margin: 10px 0;
+  width: 500px !important;
+  min-width: 500px !important;
+  max-width: 500px !important;
+  height: 500px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
-#q1, #q3 {
-  width: 100% !important;
-  height: 720px !important;
+#q1, #q2, #q3, #q4 {
+  width: 500px !important;
+  min-width: 500px !important;
+  max-width: 500px !important;
 }
+
+#q1 { grid-area: q1; }
+#q2 { grid-area: q2; }
+#q3 { grid-area: q3; }
+#q4 { grid-area: q4; }
 
 #q1 .video-container {
   position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
+  width: 100% !important;
+  height: 281.25px !important; /* 16:9 aspect ratio */
 }
 
 #q1 video, 
@@ -157,8 +164,11 @@ footer {
 }
 
 #3dCanvas {
-  width: 168px !important;
-  height: 95px !important;
+  width: 640px !important;
+  height: 480px !important;
+  background: #f0f0f0;
+  border: 2px solid #007f8b;
+  border-radius: 8px;
 }
 
 .placeholder {
@@ -171,8 +181,9 @@ footer {
 }
 
 .video-container {
-  width: 100% !important;
-  height: 100% !important;
+  position: relative;
+  width: 640px;
+  height: 480px;
 }
 
 #q3 canvas {
@@ -185,17 +196,6 @@ footer {
   object-fit: contain;
 }
 
-/* Update grid item positions */
-#q1 {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-#q3 {
-  grid-column: 1;
-  grid-row: 2;
-}
-
 /* Adjust grid item sizing */
 .grid-item#q3 {
   width: auto !important;
@@ -204,8 +204,9 @@ footer {
 
 /* Both viewers same size */
 .output_canvas, #3dCanvas {
-  width: 480px !important;
-  height: 270px !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
 }
 
 /* Add this rule to prevent scaling */
@@ -214,4 +215,162 @@ canvas {
   height: auto !important;
   max-width: 480px;
   image-rendering: crisp-edges;
+}
+
+.chat-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  background: #f8f9fa;
+}
+
+.chat-input {
+  display: flex;
+  padding: 15px;
+  border-top: 1px solid #ddd;
+}
+
+#chatInput {
+  flex: 1;
+  width: 400px !important; /* 500px container - 100px button */
+  margin-right: 10px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Add viewport meta tag equivalent */
+body::before {
+  content: '';
+  display: block;
+  position: fixed;
+  top: -10px;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.grid-container {
+    display: grid !important;
+    grid-template-columns: 500px 500px !important;
+    grid-template-rows: 500px 500px !important;
+    width: 1000px !important; /* 500px * 2 columns */
+    height: 1000px !important; /* 500px * 2 rows */
+    margin: 0 auto !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+.grid-item {
+  width: 500px !important;
+  min-width: 500px !important;
+  max-width: 500px !important;
+  transform: scale(0.98); /* Ensure no overflow */
+}
+
+/* Add this at the VERY END of the file */
+html, body {
+  width: 1000px !important; /* Force exact width */
+  height: 1000px !important; /* Force exact height */
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+body .grid-container {
+  display: grid !important;
+  grid-template-columns: 500px 500px !important;
+  grid-template-rows: 500px 500px !important;
+  width: 1000px !important;
+  height: 1000px !important;
+  margin: 0 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+}
+
+body .grid-item {
+  width: 500px !important;
+  min-width: 500px !important;
+  max-width: 500px !important;
+  height: 500px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  transform: none !important;
+}
+
+.input_video, .output_canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid #007f8b;
+  border-radius: 8px;
+}
+
+/* Validation Checks Styles */
+#q2 {
+  padding: 20px;
+  background: #f8f9fa;
+  border-left: 2px solid #007f8b;
+}
+
+.validation-checks {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  margin: 15px 0;
+  padding: 10px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.check-icon {
+  font-size: 24px;
+  margin-right: 15px;
+  width: 30px;
+  text-align: center;
+}
+
+.check-text {
+  font-size: 16px;
+  color: #333;
+}
+
+h2 {
+  color: #007f8b;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #eee;
+}
+
+.three-canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.8; /* Make 3D visualization semi-transparent */
 }

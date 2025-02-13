@@ -1,32 +1,32 @@
-from livereload import Server, shell
-from http.server import SimpleHTTPRequestHandler
-from socketserver import TCPServer
-import threading
+from http.server import SimpleHTTPRequestHandler, HTTPServer
+import os
+import time
 
-PORT = 8007
+PORT = 8025
 
-class DualServer:
-    def __init__(self):
-        # Create static file server
-        self.httpd = TCPServer(("", PORT), SimpleHTTPRequestHandler)
-        
-        # Create livereload server
-        self.lr_server = Server()
-        self.lr_server.watch('webapp/*.*', delay=1)
-        self.lr_server.watch('*.py', delay=1)
 
-    def start(self):
-        print(f"Starting development server at http://localhost:{PORT}")
-        print("Auto-reload is enabled. Save files to trigger reload.")
-        
-        # Start HTTP server in a separate thread
-        server_thread = threading.Thread(target=self.httpd.serve_forever)
-        server_thread.daemon = True
-        server_thread.start()
-        
-        # Start livereload server
-        self.lr_server.serve(port=35729)  # Livereload default port
+class Handler(SimpleHTTPRequestHandler):
+    def end_headers(self):
+        # Add proper live reload injection
+        if self.path.endswith('.html'):
+            self.send_header('Content-Type', 'text/html')
+            # Inject livereload script directly into HTML
+            self.send_header('Refresh', '1; url=http://localhost:8023' + self.path)
+        self.send_header('Cache-Control', 'no-store, must-revalidate')
+        super().end_headers()
+
+    def do_GET(self):
+        # Add live reload script injection
+        if self.path.endswith('.html'):
+            super().do_GET()
+            return
+            
+        super().do_GET()
 
 if __name__ == '__main__':
-    server = DualServer()
-    server.start() 
+    web_dir = os.path.join(os.path.dirname(__file__), 'webapp')
+    os.chdir(web_dir)
+    
+    print(f"Serving at http://localhost:{PORT}")
+    print("Auto-reload enabled - changes will refresh browser")
+    HTTPServer(('', PORT), Handler).serve_forever() 
