@@ -1,15 +1,18 @@
-import { ThreeJSViewer } from './modules/ThreeJSViewer.js';
+import { ThreeJSManager } from './modules/ThreeJSManager.js';
 import { MediaPipeManager } from './modules/MediaPipeManager.js';
 import { CameraController } from './modules/CameraController.js';
-import { UIManager } from './managers/UIManager.js';
+import { UIManager } from './ui/UIManager.js';
 
 class App {
   constructor() {
     this.ui = new UIManager();
-    this.threeViewer = new ThreeJSViewer('3dCanvas');
+    this.threeManager = new ThreeJSManager('3dCanvas', {
+      cameraPosition: { x: 0, y: 1.5, z: 3 },
+      connectionColor: 0x00FF00
+    });
     this.mediaPipe = new MediaPipeManager(
-      document.querySelector('.input_video'),
-      document.querySelector('.output_canvas')
+      this.ui.elements.video,
+      this.ui.elements.canvas
     );
 
     this.init();
@@ -22,8 +25,8 @@ class App {
   }
 
   setupCameraController() {
-    if (this.threeViewer.camera && this.threeViewer.controls) {
-      new CameraController(this.threeViewer.camera, this.threeViewer.controls);
+    if (this.threeManager.camera && this.threeManager.controls) {
+      new CameraController(this.threeManager.camera, this.threeManager.controls);
     }
   }
 
@@ -32,16 +35,15 @@ class App {
     if (success) {
       this.mediaPipe.pose.onResults(results => {
         this.mediaPipe.drawResults(results);
-        this.threeViewer.updatePose(results.poseLandmarks);
+        this.threeManager.updatePose(results.poseLandmarks);
       });
     }
   }
 
   setupUI() {
-    this.ui.setupWebcamButton(async () => {
+    this.ui.elements.webcamButton.addEventListener('click', async () => {
       const isActive = await this.mediaPipe.toggleWebcam();
-      this.ui.updateStatus(this.ui.statusElements.camera, isActive);
-      return isActive;
+      this.ui.updateStatus(this.ui.elements.status.camera, isActive);
     });
   }
 }
