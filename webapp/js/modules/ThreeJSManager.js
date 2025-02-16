@@ -45,6 +45,8 @@ export class ThreeJSManager {
       window.addEventListener('resize', () => this.handleResize());
       this.handleResize();
       
+      this._setupGrid();
+      
     } catch (error) {
       console.error('[3D] Initialization failed:', error);
       this.renderer = null;
@@ -98,6 +100,7 @@ export class ThreeJSManager {
 
   createLandmarks(landmarks) {
     landmarks.forEach((landmark, index) => {
+      const yPos = (-landmark.y + 0.5) * 2 - 1; // Subtract 1 to match grid height
       const sphere = new THREE.Mesh(
         new THREE.SphereGeometry(0.04),
         new THREE.MeshPhongMaterial({ color: 0xFF0000 })
@@ -105,7 +108,7 @@ export class ThreeJSManager {
       
       sphere.position.set(
         (landmark.x - 0.5) * 2,
-        (-landmark.y + 0.5) * 2,
+        yPos,
         (landmark.z || 0) * 2
       );
       
@@ -117,10 +120,26 @@ export class ThreeJSManager {
 
   createConnections() {
     const connections = [
-      [11, 12], [11, 13], [12, 14],
-      [13, 15], [14, 16],
-      [23, 24], [23, 25], [24, 26],
-      [25, 27], [26, 28]
+      // Head connections (eyes, ears, mouth only)
+      [0, 1], [1, 2], [2, 3], [3, 7],    // Left eye to left ear
+      [0, 4], [4, 5], [5, 6], [6, 8],    // Right eye to right ear
+      [9, 10],                           // Mouth
+      
+      // Upper body connections
+      [11, 12], [11, 13], [12, 14],    // Shoulders
+      [13, 15], [15, 17], [17, 19], [19, 15],  // Left arm
+      [14, 16], [16, 18], [18, 20], [20, 16],  // Right arm
+      [11, 23], [12, 24],              // Torso
+      
+      // Lower body connections  
+      [23, 24], [23, 25], [24, 26],    // Hips
+      [25, 27], [27, 29], [29, 31],    // Left leg
+      [26, 28], [28, 30], [30, 32],    // Right leg
+      
+      // Hands and feet
+      [15, 17], [17, 19], [19, 21],    // Left hand
+      [16, 18], [18, 20], [20, 22],     // Right hand
+      [27, 31], [28, 32]               // Feet
     ];
 
     connections.forEach(([start, end]) => {
@@ -166,5 +185,19 @@ export class ThreeJSManager {
     if (this.renderer) {
       this.renderer.render(this.scene, this.camera);
     }
+  }
+
+  _setupGrid() {
+    // Add floor grid
+    const gridSize = 4;
+    const divisions = 20;
+    const gridHelper = new THREE.GridHelper(gridSize, divisions, 0x444444, 0x888888);
+    gridHelper.position.y = -1; // Adjust height to match ground plane
+    this.scene.add(gridHelper);
+
+    // Add axis helpers
+    const axesHelper = new THREE.AxesHelper(2);
+    axesHelper.position.y = -1; // Position at grid level
+    this.scene.add(axesHelper);
   }
 } 
